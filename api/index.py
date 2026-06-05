@@ -31,8 +31,8 @@ class Student(BaseModel):
     name: str
 
 class GameScore(BaseModel):
-name: str
-score: int
+    name: str
+    score: int
 
 async def fetch_user_from_api(username: str):
     async with httpx.AsyncClient() as client:
