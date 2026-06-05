@@ -7,6 +7,10 @@ import httpx
 import redis
 import time
 import os
+from pydantic import BaseModel
+
+# Creamos el modelo para los datos del juego
+
 
 app = FastAPI()
 
@@ -25,6 +29,10 @@ r = redis.from_url(REDIS_URL, decode_responses=True) if REDIS_URL else None
 
 class Student(BaseModel):
     name: str
+
+class GameScore(BaseModel):
+name: str
+score: int
 
 async def fetch_user_from_api(username: str):
     async with httpx.AsyncClient() as client:
@@ -119,3 +127,28 @@ async def get_fast_data(username: str):
     r.setex(cache_key, 60, json.dumps(user_data))
     
     return user_data
+
+
+@app.post("/api/score")
+async def submit_score(data: GameScore):
+    if not r:
+        raise HTTPException(status_code=500, detail="Redis no configurado")
+    
+    name = data.name.strip()
+    if not name:
+        raise HTTPException(status_code=400, detail="El nombre no puede estar vacío")
+    
+    r.zadd("game_leaderboard", {name: data.score})
+    return {"status": "success", "message": f"¡Puntaje de {data.score} guardado para {name}!"}
+
+@app.get("/api/ranking")
+async def get_ranking():
+    if not r:
+        return {"ranking": []}
+    
+    # ZREVRANGE: Trae la lista ordenada de MAYOR a MENOR puntaje
+    data = r.zrevrange("game_leaderboard", 0, -1, withscores=True)
+    
+    # Formateamos la respuesta
+    ranking = [{"name": name, "score": int(score)} for name, score in data]
+    return {"ranking": ranking}
