@@ -127,8 +127,10 @@ async def get_fast_data(username: str):
     # 3. GUARDAR EN CACHÉ
     # Lo guardamos como String (JSON) por 60 segundos
     r.setex(cache_key, 60, json.dumps(user_data))
-    
+    if username == "Glenna Reichert":
+        user_data["Hidden message"] = "¡Debes escribir en el chat de la reunión: Arriba Nextgen!"
     user_data["delay_ms"] = round((time.time() - start_time) * 1000, 2)
+    
 
     return user_data
 
