@@ -100,6 +100,7 @@ async def get_fast_data(username: str):
     if not r:
         raise HTTPException(status_code=500, detail="Redis no configurado")
         
+    start_time = time.time()
     cache_key = f"user_profile:{username}"
     
     # 1. INTENTO DE LECTURA EN REDIS (Caché Hit)
@@ -109,6 +110,7 @@ async def get_fast_data(username: str):
         # ¡Está en Redis! Respondemos al instante (0 segundos de espera)
         response = json.loads(cached_data)
         response["source"] = "⚡ Recuperado desde Redis (Caché Hit)"
+        response["delay_ms"] = round((time.time() - start_time) * 1000, 2)
         return response
         
     # 2. LECTURA LENTA (Caché Miss)
@@ -126,6 +128,8 @@ async def get_fast_data(username: str):
     # Lo guardamos como String (JSON) por 60 segundos
     r.setex(cache_key, 60, json.dumps(user_data))
     
+    user_data["delay_ms"] = round((time.time() - start_time) * 1000, 2)
+
     return user_data
 
 
